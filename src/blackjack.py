@@ -139,3 +139,37 @@ class BlackjackGame:
     def all_player_hands_finished(self):
         return all(h.finished for h in self.player_hands)
 
+    def play_dealer(self):
+        """Dealer plays out their hand per standard rules."""
+        while True:
+            value, is_soft = hand_value(self.dealer_hand)
+            if value < 17 or (value == 17 and is_soft):
+                self.dealer_hand.append(self.shoe.deal())
+            else:
+                break
+
+    def settle_bets(self):
+        dealer_val, _ = hand_value(self.dealer_hand)
+        dealer_bj = is_blackjack(self.dealer_hand)
+        results = []
+        for hand in self.player_hands:
+            player_val = hand.value()
+            player_bj = hand.is_blackjack()
+            if hand.is_bust():
+                result = -hand.bet
+            elif dealer_val > 21:
+                result = hand.bet
+            elif player_bj and not dealer_bj:
+                result = int(hand.bet * 1.5)
+            elif dealer_bj and not player_bj:
+                result = -hand.bet
+            elif player_val > dealer_val:
+                result = hand.bet
+            elif player_val < dealer_val:
+                result = -hand.bet
+            else:
+                result = 0  # Push
+            self.balance += result
+            results.append(result)
+        self.in_progress = False
+        return results
