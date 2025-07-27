@@ -98,3 +98,44 @@ class BlackjackGame:
             return True
 
         return True
+
+    def get_current_hand(self):
+        return self.player_hands[self.current_hand_index]
+
+    def player_hit(self):
+        hand = self.get_current_hand()
+        if not hand.finished:
+            hand.add_card(self.shoe.deal())
+            if hand.is_bust() or hand.value() == 21:
+                hand.finished = True
+
+    def player_stand(self):
+        hand = self.get_current_hand()
+        hand.finished = True
+
+    def player_double(self):
+        hand = self.get_current_hand()
+        if hand.can_double() and self.balance >= hand.bet:
+            self.balance -= hand.bet
+            hand.bet *= 2
+            hand.doubled = True
+            hand.add_card(self.shoe.deal())
+            hand.finished = True
+
+    def player_split(self):
+        hand = self.get_current_hand()
+        if hand.can_split() and self.balance >= hand.bet:
+            self.balance -= hand.bet
+            card1, card2 = hand.cards
+            # Replace current hand with two new hands
+            self.player_hands[self.current_hand_index] = PlayerHand(hand.bet, [card1, self.shoe.deal()])
+            self.player_hands.insert(self.current_hand_index + 1, PlayerHand(hand.bet, [card2, self.shoe.deal()]))
+
+    def advance_hand(self):
+        # Move to the next unfinished hand, if any
+        while self.current_hand_index < len(self.player_hands) and self.player_hands[self.current_hand_index].finished:
+            self.current_hand_index += 1
+
+    def all_player_hands_finished(self):
+        return all(h.finished for h in self.player_hands)
+
