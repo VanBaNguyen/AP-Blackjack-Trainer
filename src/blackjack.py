@@ -51,3 +51,50 @@ class PlayerHand:
 
     def is_soft(self):
         return hand_value(self.cards)[1]
+
+class BlackjackGame:
+    def __init__(self, starting_balance=1000, min_bet=10, max_bet=1000):
+        self.shoe = Shoe()
+        self.balance = starting_balance
+        self.min_bet = min_bet
+        self.max_bet = max_bet
+        self.reset_round()
+
+    def reset_round(self):
+        self.player_hands = []
+        self.dealer_hand = []
+        self.current_hand_index = 0
+        self.current_bet = self.min_bet
+        self.in_progress = False
+        self.message = ""
+
+    def start_round(self, bet):
+        if bet < self.min_bet or bet > self.max_bet or bet > self.balance:
+            self.message = f"Invalid bet: {bet}"
+            return False
+
+        self.current_bet = bet
+        self.player_hands = [PlayerHand(bet)]
+        self.dealer_hand = [self.shoe.deal(), self.shoe.deal()]
+        for hand in self.player_hands:
+            hand.cards = [self.shoe.deal(), self.shoe.deal()]
+        self.current_hand_index = 0
+        self.in_progress = True
+        self.message = ""
+
+        # bj check
+        player_bj = self.player_hands[0].is_blackjack()
+        dealer_bj = is_blackjack(self.dealer_hand)
+        if player_bj:
+            self.player_hands[0].finished = True
+            if dealer_bj:
+                result = 0  # Push if both have blackjack
+                self.message = "Push! Both player and dealer have Blackjack."
+            else:
+                result = int(bet * 1.5)
+                self.message = "Blackjack! You win 1.5x your bet."
+            self.balance += result
+            self.in_progress = False
+            return True
+
+        return True
