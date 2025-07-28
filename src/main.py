@@ -235,3 +235,70 @@ class BlackjackWindow(QMainWindow):
             self.double_button.setEnabled(hand.can_double() and not hand.finished and self.game.balance >= hand.bet)
             self.split_button.setEnabled(hand.can_split() and not hand.finished and self.game.balance >= hand.bet)
         self.message_label.setText(self.game.message)
+
+    def place_bet(self):
+        bet = self.bet_input.value()
+        if self.game.start_round(bet):
+            self.update_ui()
+        else:
+            QMessageBox.warning(self, "Invalid Bet", self.game.message)
+
+    def hit(self):
+        self.game.player_hit()
+        self.check_hand_end()
+
+    def stand(self):
+        self.game.player_stand()
+        self.check_hand_end()
+
+    def double(self):
+        self.game.player_double()
+        self.check_hand_end()
+
+    def split(self):
+        self.game.player_split()
+        self.update_ui()
+
+    def check_hand_end(self):
+        hand = self.game.get_current_hand()
+        if hand.finished:
+            self.game.advance_hand()
+            if self.game.all_player_hands_finished():
+                # Dealer plays
+                self.game.play_dealer()
+                results = self.game.settle_bets()
+                # Show all dealer cards
+                msg = []
+                dealer_val, _ = hand_value(self.game.dealer_hand)
+                for idx, (hand, result) in enumerate(zip(self.game.player_hands, results)):
+                    val = hand.value()
+                    if result > 0:
+                        res_text = f"Win ${result}"
+                    elif result < 0:
+                        res_text = f"Lose ${-result}"
+                    else:
+                        res_text = "Push"
+                    msg.append(f"Hand {idx+1 if len(self.game.player_hands) > 1 else ''}: {val} vs Dealer {dealer_val} → {res_text}")
+                self.game.message = "\n".join(msg)
+                self.update_ui()
+                return
+            else:
+                self.update_ui()
+        else:
+            self.update_ui()
+
+    def clear_layout(self, layout):
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            child_layout = item.layout()
+            if widget is not None:
+                widget.deleteLater()
+            elif child_layout is not None:
+                self.clear_layout(child_layout)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = BlackjackWindow()
+    window.show()
+    sys.exit(app.exec_())
