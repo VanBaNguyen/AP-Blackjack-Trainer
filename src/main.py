@@ -152,3 +152,86 @@ class BlackjackWindow(QMainWindow):
         central = QWidget()
         central.setLayout(main_layout)
         self.setCentralWidget(central)
+
+    def update_ui(self):
+        # Balance and shoe
+        self.balance_label.setText(f"Balance: ${self.game.balance}")
+        self.cards_left_label.setText(f"Cards Remaining: {self.game.shoe.cards_left()}")
+
+        # Dealer cards
+        # Clear dealer card layout completely (widgets and stretches)
+        for i in reversed(range(self.dealer_cards.count())):
+            item = self.dealer_cards.itemAt(i)
+            widget = item.widget()
+            if widget:
+                widget.setParent(None)
+            else:
+                self.dealer_cards.removeItem(item)
+
+        dealer_hand = self.game.dealer_hand
+        for idx, card in enumerate(dealer_hand):
+            lbl = QLabel()
+            if idx == 1 and self.game.in_progress:
+                lbl.setPixmap(get_card_back_pixmap())
+            else:
+                lbl.setPixmap(get_card_pixmap(card))
+            self.dealer_cards.addWidget(lbl, alignment=Qt.AlignLeft)
+        self.dealer_cards.addStretch(1)
+
+        # Dealer hand value
+        if not dealer_hand:
+            self.dealer_value_label.setText("")
+        else:
+            if self.game.in_progress:
+                visible = dealer_hand[:1]
+                val, _ = hand_value(visible)
+                self.dealer_value_label.setText(f"Dealer shows: {val}")
+            else:
+                val, _ = hand_value(dealer_hand)
+                self.dealer_value_label.setText(f"Dealer: {val}")
+
+        self.clear_layout(self.player_hands_layout)
+        self.player_value_labels = []
+
+        # Show each hand with value
+        for idx, hand in enumerate(self.game.player_hands):
+            hbox = QHBoxLayout()
+            for card in hand.cards:
+                lbl = QLabel()
+                lbl.setPixmap(get_card_pixmap(card))
+                hbox.addWidget(lbl)
+            hbox.addStretch(1)
+            vbox = QVBoxLayout()
+            # Hand label
+            if len(self.game.player_hands) > 1:
+                label = QLabel(f"Hand {idx + 1} (Bet: ${hand.bet})" + (" (Active)" if idx == self.game.current_hand_index else ""))
+            else:
+                label = QLabel(f"Your Hand (Bet: ${hand.bet})")
+            vbox.addWidget(label)
+            # Hand value label
+            val = hand.value()
+            soft = hand.is_soft()
+            handtype = "soft" if soft else "hard"
+            val_label = QLabel(f"Value: {val} ({handtype})")
+            vbox.addWidget(val_label)
+            self.player_value_labels.append(val_label)
+            vbox.addLayout(hbox)
+            self.player_hands_layout.addLayout(vbox)
+
+        # Enable/disable controls
+        if not self.game.in_progress:
+            self.bet_button.setEnabled(True)
+            self.bet_input.setEnabled(True)
+            self.hit_button.setEnabled(False)
+            self.stand_button.setEnabled(False)
+            self.double_button.setEnabled(False)
+            self.split_button.setEnabled(False)
+        else:
+            self.bet_button.setEnabled(False)
+            self.bet_input.setEnabled(False)
+            hand = self.game.get_current_hand()
+            self.hit_button.setEnabled(not hand.finished)
+            self.stand_button.setEnabled(not hand.finished)
+            self.double_button.setEnabled(hand.can_double() and not hand.finished and self.game.balance >= hand.bet)
+            self.split_button.setEnabled(hand.can_split() and not hand.finished and self.game.balance >= hand.bet)
+        self.message_label.setText(self.game.message)
