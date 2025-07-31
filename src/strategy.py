@@ -118,3 +118,53 @@ def best_move_soft(hand, dealer_upcard):
     move = chart[value][idx]
     return move
 
+def best_move_hard(hand, dealer_upcard):
+    """
+    Given a blackjack hand (list of ints or card codes) and dealer upcard (int or code),
+    return the best move for hard totals according to standard basic strategy.
+    Returns:
+        'H' - Hit
+        'S' - Stand
+        'D' - Double if allowed, otherwise hit
+    """
+    values = hand_to_int_list(hand)
+    if isinstance(dealer_upcard, str):
+        dealer_upcard = card_str_to_int(dealer_upcard)
+
+    if dealer_upcard == 1:
+        dealer_upcard = 11
+    total = sum(values)
+    # Only apply this for hard hands (not soft hands)
+    if 1 in values and total + 10 <= 21:
+        return None
+
+    # Hard total strategy chart, based on your image.
+    # Rows: player hard total (17-8), Columns: dealer upcard (2-11)
+    chart = {
+        17: ["S"] * 10,
+        16: ["S","S","S","S","S","H","H","H","H","H"],
+        15: ["S","S","S","S","S","H","H","H","H","H"],
+        14: ["S","S","S","S","S","H","H","H","H","H"],
+        13: ["S","S","S","S","S","H","H","H","H","H"],
+        12: ["H","H","S","S","S","H","H","H","H","H"],
+        11: ["D"] * 10,
+        10: ["D","D","D","D","D","D","D","D","H","H"],
+        9:  ["H","D","D","D","D","H","H","H","H","H"],
+        8:  ["H"] * 10,
+    }
+
+    # For totals above 17 or below 8, use standard plays
+    if total >= 17:
+        return "S"
+    if total <= 8:
+        return "H"
+
+    # Dealer upcard 2-11 (2-10, 11=Ace)
+    idx = dealer_upcard - 2 if dealer_upcard != 11 else 9
+
+    # For totals 9-16, look up in chart
+    if total in chart:
+        return chart[total][idx]
+
+    # Fallback for any hand not covered (shouldn't happen)
+    return None
