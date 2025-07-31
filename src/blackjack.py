@@ -30,6 +30,7 @@ class PlayerHand:
         self.bet = bet
         self.doubled = doubled
         self.finished = False  # finished = stood, busted, blackjack, or after doubling
+        self.busted = False
 
     def can_split(self):
         return len(self.cards) == 2 and self.cards[0][0] == self.cards[1][0]
@@ -39,6 +40,8 @@ class PlayerHand:
 
     def add_card(self, card):
         self.cards.append(card)
+        if self.is_bust():
+            self.finished = True
 
     def is_bust(self):
         return hand_value(self.cards)[0] > 21
@@ -108,7 +111,10 @@ class BlackjackGame:
         hand = self.get_current_hand()
         if not hand.finished:
             hand.add_card(self.shoe.deal())
-            if hand.is_bust() or hand.value() == 21:
+            if hand.is_bust():
+                hand.finished = True
+                hand.busted = True
+            elif hand.value() == 21:
                 hand.finished = True
 
     def player_stand(self):
@@ -155,11 +161,12 @@ class BlackjackGame:
         dealer_bj = is_blackjack(self.dealer_hand)
         results = []
         for hand in self.player_hands:
+            if hand.is_bust():
+                results.append((0, True)) # Tuple (payout, busted)
+                continue
             player_val = hand.value()
             player_bj = hand.is_blackjack()
-            if hand.is_bust():
-                result = 0                    # <--- Player lost, bet already gone
-            elif dealer_val > 21:
+            if dealer_val > 21:
                 result = hand.bet * 2         # <--- Win: give back bet + winnings
             elif player_bj and not dealer_bj:
                 result = int(hand.bet * 2.5)  # <--- 1.5x win + original bet
@@ -174,7 +181,7 @@ class BlackjackGame:
             else:
                 result = hand.bet
             self.balance += result
-            results.append(result)
+            results.append((result, False))
         self.in_progress = False
         return results
 

@@ -272,12 +272,15 @@ class BlackjackWindow(QMainWindow):
                 dealer_val, _ = hand_value(self.game.dealer_hand)
                 for idx, (hand, result) in enumerate(zip(self.game.player_hands, results)):
                     val = hand.value()
-                    if result > 0:
-                        res_text = f"Win ${result}"
-                    elif result < 0:
-                        res_text = f"Lose ${-result}"
-                    else:
+                    payout, busted = result  # Unpack the tuple
+                    if busted:
+                        res_text = f"Lose ${hand.bet} (Bust)"
+                    elif payout > hand.bet:
+                        res_text = f"Win ${payout - hand.bet}"
+                    elif payout == hand.bet:
                         res_text = "Push"
+                    else:
+                        res_text = f"Lose ${hand.bet}"
                     msg.append(f"Hand {idx+1 if len(self.game.player_hands) > 1 else ''}: {val} vs Dealer {dealer_val} → {res_text}")
                 self.game.message = "\n".join(msg)
                 self.update_ui()
