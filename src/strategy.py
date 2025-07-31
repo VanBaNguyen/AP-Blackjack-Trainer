@@ -1,8 +1,29 @@
 # strategy.py
 
-def should_split(pair_value, dealer_upcard):
-    """pair_value: int (2-10, or 1 for Aces)
-       dealer_upcard: int (1 for Ace, 2-10, 11 for Ace)"""
+def card_str_to_int(card):
+    rank = card[0]
+    if rank == 'A':
+        return 1
+    elif rank in 'TJQK':
+        return 10
+    else:
+        return int(rank)
+
+def hand_to_int_list(hand):
+    """Convert a list of card codes (like ['AS', '7D']) to ints ([1, 7])"""
+    # If already a list of ints, just return it
+    if all(isinstance(x, int) for x in hand):
+        return hand
+    return [card_str_to_int(card) for card in hand]
+
+
+def should_split(hand, dealer_upcard):
+    """hand: list of card codes or ints (pair)
+       dealer_upcard: int (1 or 11 for Ace, 2-10, or card code string like 'AS')"""
+    values = hand_to_int_list(hand)
+    if isinstance(dealer_upcard, str):
+        dealer_upcard = card_str_to_int(dealer_upcard)
+    pair_value = values[0]  # since both cards are same value
     if dealer_upcard == 1:
         dealer_upcard = 11
     if pair_value == 1:
@@ -27,12 +48,15 @@ def should_split(pair_value, dealer_upcard):
         return False
 
 def should_double_down(hand, dealer_upcard):
-    """hand: list of ints (Ace=1, 2-10)
-       dealer_upcard: int (1 for Ace, 2-10, 11 for Ace)"""
+    """hand: list of card codes or ints (Ace=1, 2-10)
+       dealer_upcard: int or card code string"""
+    values = hand_to_int_list(hand)
+    if isinstance(dealer_upcard, str):
+        dealer_upcard = card_str_to_int(dealer_upcard)
     if dealer_upcard == 1:
         dealer_upcard = 11
-    total = sum(hand)
-    aces = hand.count(1)
+    total = sum(values)
+    aces = values.count(1)
     soft = (aces > 0 and total + 10 <= 21)
     value = total + 10 if soft else total
 
@@ -58,3 +82,4 @@ def should_double_down(hand, dealer_upcard):
             return True
         else:
             return False
+
