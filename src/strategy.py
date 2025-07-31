@@ -83,3 +83,38 @@ def should_double_down(hand, dealer_upcard):
         else:
             return False
 
+def best_move_soft(hand, dealer_upcard):
+    """
+    hand: list of card codes or ints (Ace=1, 2-10)
+    dealer_upcard: int or card code string
+    Returns: 'H', 'S', 'D', or 'Ds'
+    """
+    values = hand_to_int_list(hand)
+    if isinstance(dealer_upcard, str):
+        dealer_upcard = card_str_to_int(dealer_upcard)
+    if dealer_upcard == 1:
+        dealer_upcard = 11
+    total = sum(values)
+    aces = values.count(1)
+    soft = (aces > 0 and total + 10 <= 21)
+    value = total + 10 if soft else total
+
+    if not soft or value < 13 or value > 20:
+        return None
+
+    chart = {
+        20: ["S"]*10,                                        # A,9
+        19: ["S","S","S","S","Ds","S","S","S","S","S"],     # A,8 (Ds vs 6)
+        18: ["Ds","Ds","Ds","Ds","Ds","S","S","H","H","H"], # A,7
+        17: ["H","D","D","D","D","H","H","H","H","H"],      # A,6
+        16: ["H","H","D","D","D","H","H","H","H","H"],      # A,5
+        15: ["H","H","D","D","D","H","H","H","H","H"],      # A,4
+        14: ["H","H","H","D","D","H","H","H","H","H"],      # A,3
+        13: ["H","H","H","D","D","H","H","H","H","H"],      # A,2
+    }
+
+    idx = dealer_upcard - 2 if dealer_upcard != 11 else 9
+
+    move = chart[value][idx]
+    return move
+
