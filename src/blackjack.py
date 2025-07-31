@@ -74,6 +74,8 @@ class BlackjackGame:
             return False
 
         self.current_bet = bet
+        # Deduct bet *immediately* visual purposes
+        self.balance -= bet
         self.player_hands = [PlayerHand(bet)]
         self.dealer_hand = [self.shoe.deal(), self.shoe.deal()]
         for hand in self.player_hands:
@@ -88,10 +90,10 @@ class BlackjackGame:
         if player_bj:
             self.player_hands[0].finished = True
             if dealer_bj:
-                result = 0  # Push if both have blackjack
+                result = self.current_bet     # <--- Add back bet (push)
                 self.message = "Push! Both player and dealer have Blackjack."
             else:
-                result = int(bet * 1.5)
+                result = int(self.current_bet * 2.5)  # <--- 1.5x win + original bet
                 self.message = "Blackjack! You win 1.5x your bet."
             self.balance += result
             self.in_progress = False
@@ -156,20 +158,23 @@ class BlackjackGame:
             player_val = hand.value()
             player_bj = hand.is_blackjack()
             if hand.is_bust():
-                result = -hand.bet
+                result = 0                    # <--- Player lost, bet already gone
             elif dealer_val > 21:
-                result = hand.bet
+                result = hand.bet * 2         # <--- Win: give back bet + winnings
             elif player_bj and not dealer_bj:
-                result = int(hand.bet * 1.5)
+                result = int(hand.bet * 2.5)  # <--- 1.5x win + original bet
             elif dealer_bj and not player_bj:
-                result = -hand.bet
+                result = 0                    # <--- Player lost
             elif player_val > dealer_val:
-                result = hand.bet
+                result = hand.bet * 2         # <--- Win: give back bet + winnings
+            # Loss
             elif player_val < dealer_val:
-                result = -hand.bet
+                result = 0    
+            #Push: give back bet
             else:
-                result = 0  # Push
+                result = hand.bet
             self.balance += result
             results.append(result)
         self.in_progress = False
         return results
+
