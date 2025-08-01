@@ -265,6 +265,7 @@ class BlackjackWindow(QMainWindow):
             self.stand_button.setEnabled(not hand.finished)
             self.double_button.setEnabled(hand.can_double() and not hand.finished and self.game.balance >= hand.bet)
             self.split_button.setEnabled(hand.can_split() and not hand.finished and self.game.balance >= hand.bet)
+        self.best_move_button.setEnabled(self.game.in_progress)
         self.message_label.setText(self.game.message)
 
     def place_bet(self):
@@ -291,6 +292,10 @@ class BlackjackWindow(QMainWindow):
         self.update_ui()
 
     def show_best_move(self):
+        if not self.game.in_progress:
+            self.message_label.setText("No hand in progress.")
+            return
+
         hand = self.game.get_current_hand()
         dealer_card = self.game.dealer_hand[0]
         move = None
