@@ -33,7 +33,10 @@ class PlayerHand:
         self.busted = False
 
     def can_split(self):
-        return len(self.cards) == 2 and self.cards[0][0] == self.cards[1][0]
+        return (
+            len(self.cards) == 2 and
+            card_value(self.cards[0]) == card_value(self.cards[1])
+        )
 
     def can_double(self):
         return len(self.cards) == 2 and not self.doubled
