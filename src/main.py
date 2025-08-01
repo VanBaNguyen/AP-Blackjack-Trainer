@@ -194,29 +194,39 @@ class BlackjackWindow(QMainWindow):
         self.player_value_labels = []
 
         # Show each hand with value
-        for idx, hand in enumerate(self.game.player_hands):
-            hbox = QHBoxLayout()
-            for card in hand.cards:
-                lbl = QLabel()
-                lbl.setPixmap(get_card_pixmap(card))
-                hbox.addWidget(lbl)
-            hbox.addStretch(1)
-            vbox = QVBoxLayout()
-            # Hand label
-            if len(self.game.player_hands) > 1:
-                label = QLabel(f"Hand {idx + 1} (Bet: ${hand.bet})" + (" (Active)" if idx == self.game.current_hand_index else ""))
-            else:
-                label = QLabel(f"Your Hand (Bet: ${hand.bet})")
-            vbox.addWidget(label)
-            # Hand value label
-            val = hand.value()
-            soft = hand.is_soft()
-            handtype = "soft" if soft else "hard"
-            val_label = QLabel(f"Value: {val} ({handtype})")
-            vbox.addWidget(val_label)
-            self.player_value_labels.append(val_label)
-            vbox.addLayout(hbox)
-            self.player_hands_layout.addLayout(vbox)
+        hands = self.game.player_hands
+        num_hands = len(hands)
+        i = 0
+        while i < num_hands:
+            row_layout = QHBoxLayout()
+            for j in range(2):
+                if i + j < num_hands:
+                    hand = hands[i + j]
+                    vbox = QVBoxLayout()
+                    hbox = QHBoxLayout()
+                    for card in hand.cards:
+                        lbl = QLabel()
+                        lbl.setPixmap(get_card_pixmap(card))
+                        hbox.addWidget(lbl)
+                    hbox.addStretch(1)
+                    # Hand label
+                    if num_hands > 1:
+                        label = QLabel(f"Hand {i + j + 1} (Bet: ${hand.bet})" + (" (Active)" if i + j == self.game.current_hand_index else ""))
+                    else:
+                        label = QLabel(f"Your Hand (Bet: ${hand.bet})")
+                    vbox.addWidget(label)
+                    # Hand value label
+                    val = hand.value()
+                    soft = hand.is_soft()
+                    handtype = "soft" if soft else "hard"
+                    val_label = QLabel(f"Value: {val} ({handtype})")
+                    vbox.addWidget(val_label)
+                    self.player_value_labels.append(val_label)
+                    vbox.addLayout(hbox)
+                    row_layout.addLayout(vbox)
+            row_layout.addStretch(1)
+            self.player_hands_layout.addLayout(row_layout)
+            i += 2
 
         # Enable/disable controls
         if not self.game.in_progress:
