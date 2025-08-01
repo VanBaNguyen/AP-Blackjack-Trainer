@@ -46,6 +46,14 @@ def code_to_filename(card_code):
     suit = suit_map[card_code[1]]
     return f"{rank}_of_{suit}.svg"
 
+def move_to_str(move):
+    return {
+        "Stand": "Stand",
+        "Hit": "Hit",
+        "Double": "Double",
+        "Split": "Split",
+    }.get(move, move)
+
 def svg_to_pixmap(svg_path, width=70, height=105):
     if not os.path.exists(svg_path):
         # Fallback: transparent pixmap
@@ -392,6 +400,47 @@ class BlackjackWindow(QMainWindow):
                 widget.deleteLater()
             elif child_layout is not None:
                 self.clear_layout(child_layout)
+    
+    def get_best_move_for_hand(self, hand):
+        dealer_card = self.game.dealer_hand[0]
+        move = None
+
+        # Pair?
+        if hand.can_split():
+            if should_split(hand.cards, dealer_card):
+                move = "Split"
+            else:
+                move = None
+
+        val, is_soft = hand_value(hand.cards)
+        if move is None:
+            if is_soft and val != 21:
+                best = best_move_soft(hand.cards, dealer_card)
+                if best == "S":
+                    move = "Stand"
+                elif best == "H":
+                    move = "Hit"
+                elif best == "D" or best == "Ds":
+                    if hand.can_double() and self.game.balance >= hand.bet:
+                        move = "Double"
+                    else:
+                        move = "Hit" if best == "D" else "Stand"
+            else:
+                best = best_move_hard(hand.cards, dealer_card)
+                if best == "S":
+                    move = "Stand"
+                elif best == "H":
+                    move = "Hit"
+                elif best == "D":
+                    if hand.can_double() and self.game.balance >= hand.bet:
+                        move = "Double"
+                    else:
+                        move = "Hit"
+        if move is None:
+            move = "Stand" if val >= 17 else "Hit"
+        return move
+    
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -24,6 +24,14 @@ def hand_value(hand):
 def is_blackjack(hand):
     return len(hand) == 2 and hand_value(hand)[0] == 21
 
+def move_to_str(move):
+    return {
+        "Stand": "Stand",
+        "Hit": "Hit",
+        "Double": "Double",
+        "Split": "Split",
+    }.get(move, move)
+
 class PlayerHand:
     def __init__(self, bet, cards=None, doubled=False):
         self.cards = cards or []
