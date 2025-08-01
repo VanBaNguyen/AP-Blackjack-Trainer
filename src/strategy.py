@@ -168,3 +168,61 @@ def best_move_hard(hand, dealer_upcard):
 
     # Fallback for any hand not covered (shouldn't happen)
     return None
+
+def check_playing_deviations(hand, dealer_upcard, true_count):
+    """
+    Given hand, dealer upcard, and true count,
+    returns one of ('Stand', 'Hit', 'Double', 'Split') or None if no deviation.
+    Pair of 10s is 10, 10 or any face cards that sum to 20.
+    """
+    values = hand_to_int_list(hand)
+    if isinstance(dealer_upcard, str):
+        dealer_upcard = card_str_to_int(dealer_upcard)
+    total = sum(values)
+    is_pair = len(values) == 2 and values[0] == values[1]
+    # Check for Pair of 10s even if they're face cards
+    pair_of_10s = (
+        len(values) == 2 and
+        card_str_to_int(hand[0]) == 10 and
+        card_str_to_int(hand[1]) == 10
+    )
+    # ------------- VARIANCE PLAYS -------------
+    # Format: (player total or pair, dealer card, required TC, move, sense)
+    deviations = [
+        # (Player total, Dealer upcard, TC threshold, Action, Direction (">=", "<="))
+        (16, 9,   5,  "Stand",  ">="),
+        (16, 10,  0,  "Stand",  ">="),
+        (15, 10,  4,  "Stand",  ">="),
+        (13, 2,  -1,  "Stand",  ">="),
+        (13, 3,  -2,  "Stand",  ">="),
+        (12, 2,   4,  "Stand",  ">="),
+        (12, 3,   2,  "Stand",  ">="),
+        (12, 4,   0,  "Stand",  ">="),
+        (12, 5,  -1,  "Stand",  ">="),
+        (12, 6,  -1,  "Stand",  ">="),
+        (11, 11,  1,  "Double", ">="), # 11 vs Ace
+        (10, 10,  4,  "Double", ">="),
+        (10, 11,  4,  "Double", ">="),
+        (9, 2,    1,  "Double", ">="),
+        (9, 7,    4,  "Double", ">="),
+        # Pair of 10s
+        ("pair10", 5,  5, "Split", ">="),
+        ("pair10", 6,  5, "Split", ">="),
+    ]
+    for rule in deviations:
+        p_val, d_card, req_tc, move, sense = rule
+        if p_val == "pair10":
+            if not pair_of_10s:
+                continue
+            if dealer_upcard != d_card:
+                continue
+            if (sense == ">=" and true_count >= req_tc) or (sense == "<=" and true_count <= req_tc):
+                return move
+        else:
+            if total != p_val:
+                continue
+            if dealer_upcard != d_card:
+                continue
+            if (sense == ">=" and true_count >= req_tc) or (sense == "<=" and true_count <= req_tc):
+                return move
+    return None
