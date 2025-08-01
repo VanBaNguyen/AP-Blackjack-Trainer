@@ -131,6 +131,10 @@ class BlackjackGame:
             hand.finished = True
 
     def player_split(self):
+        if len(self.player_hands) >= 4:
+            self.message = "Maximum number of splits reached (4 hands)."
+            return
+
         hand = self.get_current_hand()
         if hand.can_split() and self.balance >= hand.bet:
             self.balance -= hand.bet
