@@ -11,6 +11,7 @@ from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QPainter
 
 from blackjack import BlackjackGame, hand_value
+from strategy import should_split, should_double_down, best_move_soft, best_move_hard
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -75,7 +76,7 @@ def get_card_back_pixmap():
 class BlackjackWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Casino Blackjack Simulator")
+        self.setWindowTitle("Casino Blackjack Trainer")
         self.resize(700, 850)
         self.game = BlackjackGame()
         self.init_ui()
@@ -130,6 +131,8 @@ class BlackjackWindow(QMainWindow):
         self.double_button.clicked.connect(self.double)
         self.split_button = QPushButton("Split")
         self.split_button.clicked.connect(self.split)
+        self.best_move_button = QPushButton("Best Move")
+        self.best_move_button.clicked.connect(self.show_best_move)
 
         action_box = QHBoxLayout()
         action_box.addWidget(self.hit_button)
@@ -147,7 +150,9 @@ class BlackjackWindow(QMainWindow):
         main_layout.addLayout(player_box)
         main_layout.addLayout(bet_box)
         main_layout.addLayout(action_box)
+        main_layout.addWidget(self.best_move_button)
         main_layout.addWidget(self.message_label)
+        
 
         central = QWidget()
         central.setLayout(main_layout)
@@ -268,6 +273,58 @@ class BlackjackWindow(QMainWindow):
     def split(self):
         self.game.player_split()
         self.update_ui()
+
+    def show_best_move(self):
+        hand = self.game.get_current_hand()
+        dealer_card = self.game.dealer_hand[0]
+        move = None
+
+        # Prepare data for strategy
+        player_cards = hand.cards
+        dealer_upcard = dealer_card[0] if dealer_card else None
+
+        # Pair?
+        if hand.can_split():
+            if should_split(player_cards, dealer_card):
+                move = "Split"
+            else:
+                # Not recommended to split, fall through to other logic
+                move = None
+
+        # Soft hand?
+        val, is_soft = hand_value(player_cards)
+        if move is None:
+            if is_soft and val != 21:
+                best = best_move_soft(player_cards, dealer_card)
+                if best == "S":
+                    move = "Stand"
+                elif best == "H":
+                    move = "Hit"
+                elif best == "D" or best == "Ds":
+                    if hand.can_double() and self.game.balance >= hand.bet:
+                        move = "Double"
+                    else:
+                        move = "Hit" if best == "D" else "Stand"
+            else:
+                # Hard hand
+                best = best_move_hard(player_cards, dealer_card)
+                if best == "S":
+                    move = "Stand"
+                elif best == "H":
+                    move = "Hit"
+                elif best == "D":
+                    if hand.can_double() and self.game.balance >= hand.bet:
+                        move = "Double"
+                    else:
+                        move = "Hit"
+
+        # Fallback if for any reason nothing set
+        if move is None:
+            move = "Stand" if val >= 17 else "Hit"
+
+        # Show in message label
+        self.message_label.setText(f"Best move: {move}")
+
 
     def check_hand_end(self):
         hand = self.game.get_current_hand()
