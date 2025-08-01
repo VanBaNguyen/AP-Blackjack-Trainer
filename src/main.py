@@ -11,7 +11,7 @@ from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QPainter
 
 from blackjack import BlackjackGame, hand_value
-from strategy import should_split, should_double_down, best_move_soft, best_move_hard
+from strategy import should_split, should_double_down, best_move_soft, best_move_hard, check_playing_deviations
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -403,7 +403,12 @@ class BlackjackWindow(QMainWindow):
     
     def get_best_move_for_hand(self, hand):
         dealer_card = self.game.dealer_hand[0]
+        true_count = self.game.shoe.get_true_count()
         move = None
+
+        move = check_playing_deviations(hand.cards, dealer_card, true_count)
+        if move is not None:
+            return move
 
         # Pair?
         if hand.can_split():
@@ -440,6 +445,62 @@ class BlackjackWindow(QMainWindow):
             move = "Stand" if val >= 17 else "Hit"
         return move
     
+    def double(self):
+        hand = self.game.get_current_hand()
+        if not self.game.in_progress or hand.finished:
+            # Note to self: comment out ALL returns to allow bad moves xdxd
+            return
+
+        recommended = self.get_best_move_for_hand(hand)
+        if recommended != "Double":
+            self.message_label.setText(
+                f"Suboptimal Move!\nDouble when supposed to {recommended}\n"
+            )
+            return
+        self.game.player_double()
+        self.check_hand_end()
+    
+    def hit(self):
+        hand = self.game.get_current_hand()
+        if not self.game.in_progress or hand.finished:
+            return
+
+        recommended = self.get_best_move_for_hand(hand)
+        if recommended != "Hit":
+            self.message_label.setText(
+                f"Suboptimal Move!\nHit when supposed to {recommended}\n"
+            )
+            return
+        self.game.player_hit()
+        self.check_hand_end()
+
+    def stand(self):
+        hand = self.game.get_current_hand()
+        if not self.game.in_progress or hand.finished:
+            return
+
+        recommended = self.get_best_move_for_hand(hand)
+        if recommended != "Stand":
+            self.message_label.setText(
+                f"Suboptimal Move!\nStand when supposed to {recommended}\n"
+            )
+            return
+        self.game.player_stand()
+        self.check_hand_end()
+
+    def split(self):
+        hand = self.game.get_current_hand()
+        if not self.game.in_progress or hand.finished:
+            return
+
+        recommended = self.get_best_move_for_hand(hand)
+        if recommended != "Split":
+            self.message_label.setText(
+                f"Suboptimal Move!\nSplit when supposed to {recommended}\n"
+            )
+            return
+        self.game.player_split()
+        self.update_ui()
 
 
 if __name__ == "__main__":
