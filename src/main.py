@@ -93,6 +93,10 @@ class BlackjackWindow(QMainWindow):
         top_box.addWidget(self.cards_left_label)
         top_box.addStretch(1)
 
+        self.count_label = QLabel()
+        top_box.addSpacing(20)
+        top_box.addWidget(self.count_label)
+
         # Dealer
         self.dealer_label = QLabel("Dealer:")
         self.dealer_cards = QHBoxLayout()
@@ -133,12 +137,19 @@ class BlackjackWindow(QMainWindow):
         self.split_button.clicked.connect(self.split)
         self.best_move_button = QPushButton("Best Move")
         self.best_move_button.clicked.connect(self.show_best_move)
+        self.check_count_button = QPushButton("Check Count")
+        self.check_count_button.clicked.connect(self.show_count)
 
         action_box = QHBoxLayout()
         action_box.addWidget(self.hit_button)
         action_box.addWidget(self.stand_button)
         action_box.addWidget(self.double_button)
         action_box.addWidget(self.split_button)
+
+        bottom_action_box = QHBoxLayout()
+        bottom_action_box.addWidget(self.best_move_button)
+        bottom_action_box.addWidget(self.check_count_button)
+        bottom_action_box.addStretch(1) 
 
         # Message
         self.message_label = QLabel()
@@ -150,7 +161,7 @@ class BlackjackWindow(QMainWindow):
         main_layout.addLayout(player_box)
         main_layout.addLayout(bet_box)
         main_layout.addLayout(action_box)
-        main_layout.addWidget(self.best_move_button)
+        main_layout.addLayout(bottom_action_box)
         main_layout.addWidget(self.message_label)
         
 
@@ -162,6 +173,11 @@ class BlackjackWindow(QMainWindow):
         # Balance and shoe
         self.balance_label.setText(f"Balance: ${self.game.balance}")
         self.cards_left_label.setText(f"Cards Remaining: {self.game.shoe.cards_left()}")
+
+        # Update the count label
+        running = self.game.shoe.get_running_count()
+        true = self.game.shoe.get_true_count()
+        self.count_label.setText(f"Running: {running}   True: {true:.2f}")
 
         # Dealer cards
         # Clear dealer card layout completely (widgets and stretches)
@@ -356,6 +372,11 @@ class BlackjackWindow(QMainWindow):
                 self.update_ui()
         else:
             self.update_ui()
+    
+    def show_count(self):
+        running = self.game.shoe.get_running_count()
+        true = self.game.shoe.get_true_count()
+        self.message_label.setText(f"Running count: {running}    True count: {true:.2f}")
 
     def clear_layout(self, layout):
         while layout.count():

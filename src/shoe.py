@@ -6,7 +6,7 @@ class Shoe:
         self.reshuffle_pct = reshuffle_pct
         self.cards = []
         self.discards = []
-        self.runnigng_count = 0
+        self.running_count = 0
         self.reshuffle()
 
     def reshuffle(self):
