@@ -305,55 +305,13 @@ class BlackjackWindow(QMainWindow):
             return
 
         hand = self.game.get_current_hand()
-        dealer_card = self.game.dealer_hand[0]
-        move = None
-
-        # Prepare data for strategy
-        player_cards = hand.cards
-        dealer_upcard = dealer_card[0] if dealer_card else None
-
-        # Pair?
-        if hand.can_split():
-            if should_split(player_cards, dealer_card):
-                move = "Split"
-            else:
-                # Not recommended to split, fall through to other logic
-                move = None
-
-        # Soft hand?
-        val, is_soft = hand_value(player_cards)
-        if move is None:
-            if is_soft and val != 21:
-                best = best_move_soft(player_cards, dealer_card)
-                if best == "S":
-                    move = "Stand"
-                elif best == "H":
-                    move = "Hit"
-                elif best == "D" or best == "Ds":
-                    if hand.can_double() and self.game.balance >= hand.bet:
-                        move = "Double"
-                    else:
-                        move = "Hit" if best == "D" else "Stand"
-            else:
-                # Hard hand
-                best = best_move_hard(player_cards, dealer_card)
-                if best == "S":
-                    move = "Stand"
-                elif best == "H":
-                    move = "Hit"
-                elif best == "D":
-                    if hand.can_double() and self.game.balance >= hand.bet:
-                        move = "Double"
-                    else:
-                        move = "Hit"
-
-        # Fallback if for any reason nothing set
-        if move is None:
-            move = "Stand" if val >= 17 else "Hit"
-
-        # Show in message label
-        self.message_label.setText(f"Best move: {move}")
-
+        move, is_deviation = self.get_best_move_for_hand(hand)
+        if is_deviation:
+            self.message_label.setText(
+                f"Deviation Move!\nBest move: {move}\n(Card counting deviation)"
+            )
+        else:
+            self.message_label.setText(f"Best move: {move}")
 
     def check_hand_end(self):
         hand = self.game.get_current_hand()
@@ -404,11 +362,12 @@ class BlackjackWindow(QMainWindow):
     def get_best_move_for_hand(self, hand):
         dealer_card = self.game.dealer_hand[0]
         true_count = self.game.shoe.get_true_count()
-        move = None
 
-        move = check_playing_deviations(hand.cards, dealer_card, true_count)
-        if move is not None:
-            return move
+        deviation_move = check_playing_deviations(hand.cards, dealer_card, true_count)
+        if deviation_move:
+            return deviation_move, True  # True = deviation
+
+        move = None
 
         # Pair?
         if hand.can_split():
@@ -443,34 +402,24 @@ class BlackjackWindow(QMainWindow):
                         move = "Hit"
         if move is None:
             move = "Stand" if val >= 17 else "Hit"
-        return move
-    
-    def double(self):
-        hand = self.game.get_current_hand()
-        if not self.game.in_progress or hand.finished:
-            # Note to self: comment out ALL returns to allow bad moves xdxd
-            return
-
-        recommended = self.get_best_move_for_hand(hand)
-        if recommended != "Double":
-            self.message_label.setText(
-                f"Suboptimal Move!\nDouble when supposed to {recommended}\n"
-            )
-            return
-        self.game.player_double()
-        self.check_hand_end()
+        return move, False
     
     def hit(self):
         hand = self.game.get_current_hand()
         if not self.game.in_progress or hand.finished:
             return
 
-        recommended = self.get_best_move_for_hand(hand)
+        recommended, is_deviation = self.get_best_move_for_hand(hand)
         if recommended != "Hit":
-            self.message_label.setText(
-                f"Suboptimal Move!\nHit when supposed to {recommended}\n"
-            )
-            return
+            if is_deviation:
+                self.message_label.setText(
+                    f"Suboptimal Move!\nHit when deviation recommends {recommended} (Card counting deviation)\n"
+                )
+            else:
+                self.message_label.setText(
+                    f"Suboptimal Move!\nHit when supposed to {recommended}\n"
+                )
+            return  # Show warning and do nothing else!
         self.game.player_hit()
         self.check_hand_end()
 
@@ -479,13 +428,37 @@ class BlackjackWindow(QMainWindow):
         if not self.game.in_progress or hand.finished:
             return
 
-        recommended = self.get_best_move_for_hand(hand)
+        recommended, is_deviation = self.get_best_move_for_hand(hand)
         if recommended != "Stand":
-            self.message_label.setText(
-                f"Suboptimal Move!\nStand when supposed to {recommended}\n"
-            )
+            if is_deviation:
+                self.message_label.setText(
+                    f"Suboptimal Move!\nStand when deviation recommends {recommended} (Card counting deviation)\n"
+                )
+            else:
+                self.message_label.setText(
+                    f"Suboptimal Move!\nStand when supposed to {recommended}\n"
+                )
             return
         self.game.player_stand()
+        self.check_hand_end()
+
+    def double(self):
+        hand = self.game.get_current_hand()
+        if not self.game.in_progress or hand.finished:
+            return
+
+        recommended, is_deviation = self.get_best_move_for_hand(hand)
+        if recommended != "Double":
+            if is_deviation:
+                self.message_label.setText(
+                    f"Suboptimal Move!\nDouble when deviation recommends {recommended} (Card counting deviation)\n"
+                )
+            else:
+                self.message_label.setText(
+                    f"Suboptimal Move!\nDouble when supposed to {recommended}\n"
+                )
+            return
+        self.game.player_double()
         self.check_hand_end()
 
     def split(self):
@@ -493,14 +466,20 @@ class BlackjackWindow(QMainWindow):
         if not self.game.in_progress or hand.finished:
             return
 
-        recommended = self.get_best_move_for_hand(hand)
+        recommended, is_deviation = self.get_best_move_for_hand(hand)
         if recommended != "Split":
-            self.message_label.setText(
-                f"Suboptimal Move!\nSplit when supposed to {recommended}\n"
-            )
+            if is_deviation:
+                self.message_label.setText(
+                    f"Suboptimal Move!\nSplit when deviation recommends {recommended} (Card counting deviation)\n"
+                )
+            else:
+                self.message_label.setText(
+                    f"Suboptimal Move!\nSplit when supposed to {recommended}\n"
+                )
             return
         self.game.player_split()
         self.update_ui()
+
 
 
 if __name__ == "__main__":
