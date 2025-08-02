@@ -87,6 +87,7 @@ class BlackjackWindow(QMainWindow):
         self.setWindowTitle("Casino Blackjack Trainer")
         self.resize(700, 850)
         self.game = BlackjackGame()
+        self.count_visible = True
         self.init_ui()
         self.update_ui()
 
@@ -345,9 +346,8 @@ class BlackjackWindow(QMainWindow):
             self.update_ui()
     
     def show_count(self):
-        running = self.game.shoe.get_running_count()
-        true = self.game.shoe.get_true_count()
-        self.message_label.setText(f"Running count: {running}    True count: {true:.2f}")
+        self.count_visible = not self.count_visible
+        self.count_label.setVisible(self.count_visible)
 
     def clear_layout(self, layout):
         while layout.count():
