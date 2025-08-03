@@ -24,14 +24,6 @@ def hand_value(hand):
 def is_blackjack(hand):
     return len(hand) == 2 and hand_value(hand)[0] == 21
 
-def move_to_str(move):
-    return {
-        "Stand": "Stand",
-        "Hit": "Hit",
-        "Double": "Double",
-        "Split": "Split",
-    }.get(move, move)
-
 class PlayerHand:
     def __init__(self, bet, cards=None, doubled=False):
         self.cards = cards or []
@@ -39,6 +31,7 @@ class PlayerHand:
         self.doubled = doubled
         self.finished = False  # finished = stood, busted, blackjack, or after doubling
         self.busted = False
+        self.sit_out_mode = False
 
     def can_split(self):
         return (
@@ -81,6 +74,7 @@ class BlackjackGame:
         self.current_bet = self.min_bet
         self.in_progress = False
         self.message = ""
+        self.sit_out_mode = False
 
     def start_round(self, bet):
         if bet < self.min_bet or bet > self.max_bet or bet > self.balance:
@@ -199,4 +193,25 @@ class BlackjackGame:
             results.append((result, False))
         self.in_progress = False
         return results
+    
+    def sit_out_round(self):
+        if self.in_progress:
+            self.message = "A round is already in progress."
+            return False
+        self.sit_out_mode = True
+        # No bet, just deal cards
+        self.player_hands = [PlayerHand(0)]
+        self.dealer_hand = [self.shoe.deal(), self.shoe.deal()]
+        for hand in self.player_hands:
+            hand.cards = [self.shoe.deal(), self.shoe.deal()]
+            hand.finished = True  # Don't play out, player is sitting out
+        self.current_hand_index = 0
+        self.in_progress = True
+        self.message = "Sit Out: Hand dealt. No action taken."
+        return True
+
+    def sit_out_settle(self):
+        # Just end the round. No money is affected, but mark as done.
+        self.in_progress = False
+        self.message = "Sit Out: Hand played, no bet placed."
 
