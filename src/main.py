@@ -127,13 +127,19 @@ class BlackjackWindow(QMainWindow):
         self.bet_input = QSpinBox()
         self.bet_input.setRange(self.game.min_bet, self.game.max_bet)
         self.bet_input.setValue(self.game.min_bet)
-        self.bet_button = QPushButton("Place Bet & Deal")
+        self.bet_button = QPushButton("Place Bet")
         self.bet_button.clicked.connect(self.place_bet)
 
         bet_box = QHBoxLayout()
         bet_box.addWidget(QLabel("Bet:"))
         bet_box.addWidget(self.bet_input)
         bet_box.addWidget(self.bet_button)
+
+        self.sitout_button = QPushButton("Sit Out")
+        self.sitout_button.clicked.connect(self.sit_out)
+
+        # Add to bet_box
+        bet_box.addWidget(self.sitout_button)
 
         # Action buttons
         self.hit_button = QPushButton("Hit")
@@ -403,6 +409,18 @@ class BlackjackWindow(QMainWindow):
         if move is None:
             move = "Stand" if val >= 17 else "Hit"
         return move, False
+        
+    def sit_out(self):
+        # Start a round, but don't deduct or settle bet, player does nothing
+        if not self.game.sit_out_round():
+            QMessageBox.warning(self, "Sit Out", self.game.message)
+            return
+        # Update UI immediately to show initial deal
+        self.update_ui()
+        # Play out dealer and finish round
+        self.game.play_dealer()
+        self.game.sit_out_settle()
+        self.update_ui()
     
     def hit(self):
         hand = self.game.get_current_hand()
