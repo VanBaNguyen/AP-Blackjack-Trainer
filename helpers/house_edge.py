@@ -38,4 +38,85 @@ class HouseEdgeCalculator(QWidget):
         self.setStyleSheet("background-color: #18171c; color: #fff;")
         self.initUI()
     
-
+    def initUI(self):
+        layout = QVBoxLayout()
+        
+        header = QLabel("House Edge Calculator")
+        header.setFont(QFont("Arial", 20, QFont.Bold))
+        header.setAlignment(Qt.AlignCenter)
+        layout.addWidget(header)
+        
+        # Options Grid
+        grid = QGridLayout()
+        
+        # H17
+        h17_box = self.make_option_group("Does the Dealer Hit or Stand on Soft 17?", ["Hits", "Stands"], "H17")
+        grid.addWidget(h17_box, 0, 0)
+        
+        # DAS
+        das_box = self.make_option_group("Can the Player Double After Splitting?", ["Yes", "No"], "DAS")
+        grid.addWidget(das_box, 1, 0)
+        
+        # DOUBLE
+        double_box = self.make_option_group("When Can a Player Double?", ["Any First Two Cards", "9-11 Only", "10-11 Only"], "DOUBLE")
+        grid.addWidget(double_box, 2, 0)
+        
+        # RSA
+        rsa_box = self.make_option_group("Can Player Split Aces More Than Once?", ["Yes", "No"], "RSA")
+        grid.addWidget(rsa_box, 3, 0)
+        
+        # LS
+        ls_box = self.make_option_group("Is Late surrender allowed?", ["Yes", "No"], "LS")
+        grid.addWidget(ls_box, 4, 0)
+        
+        layout.addLayout(grid)
+        
+        # House Edge Table
+        self.edge_labels = {}
+        table = QHBoxLayout()
+        decks = [1, 2, 4, 6, 8]
+        self.deck_keys = decks
+        deck_names = ["Single Deck", "Double Deck", "4 Decks", "6 Decks", "8 Decks"]
+        for name, d in zip(deck_names, decks):
+            v = QVBoxLayout()
+            title = QLabel(name)
+            title.setFont(QFont("Arial", 10, QFont.Bold))
+            v.addWidget(title, alignment=Qt.AlignCenter)
+            edge_lbl = QLabel("0.000")
+            edge_lbl.setFont(QFont("Arial", 16, QFont.Bold))
+            v.addWidget(edge_lbl, alignment=Qt.AlignCenter)
+            self.edge_labels[d] = edge_lbl
+            table.addLayout(v)
+        frame = QFrame()
+        frame.setLayout(table)
+        frame.setStyleSheet("background-color: #21212b; border-radius: 8px;")
+        layout.addWidget(frame)
+        
+        self.setLayout(layout)
+        self.resize(700, 500)
+        self.update_edges()
+    
+    def make_option_group(self, title, options, key):
+        groupbox = QGroupBox()
+        groupbox.setStyleSheet("background-color: #23232f; border-radius: 6px;")
+        v = QVBoxLayout()
+        label = QLabel(title)
+        label.setFont(QFont("Arial", 11, QFont.Bold))
+        v.addWidget(label)
+        h = QHBoxLayout()
+        self.__dict__[f"{key}_group"] = QButtonGroup(self)
+        for opt in options:
+            radio = QRadioButton(opt)
+            radio.setFont(QFont("Arial", 10))
+            radio.setStyleSheet("QRadioButton { padding: 4px; }")
+            if key == "H17" and opt == "Hits": radio.setChecked(True)
+            if key == "DAS" and opt == "Yes": radio.setChecked(True)
+            if key == "DOUBLE" and opt == "Any First Two Cards": radio.setChecked(True)
+            if key == "RSA" and opt == "No": radio.setChecked(True)
+            if key == "LS" and opt == "No": radio.setChecked(True)
+            h.addWidget(radio)
+            self.__dict__[f"{key}_group"].addButton(radio)
+            radio.toggled.connect(self.update_edges)
+        v.addLayout(h)
+        groupbox.setLayout(v)
+        return groupbox
