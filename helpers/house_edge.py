@@ -120,3 +120,33 @@ class HouseEdgeCalculator(QWidget):
         v.addLayout(h)
         groupbox.setLayout(v)
         return groupbox
+
+    def get_rule_values(self):
+        rules = {
+            'H17': self.H17_group.buttons()[0].isChecked(),  # Hits
+            'DAS': self.DAS_group.buttons()[0].isChecked(),  # Yes
+            'DOUBLE': "Any" if self.DOUBLE_group.buttons()[0].isChecked() else (
+                "9-11" if self.DOUBLE_group.buttons()[1].isChecked() else "10-11"
+            ),
+            'RSA': self.RSA_group.buttons()[0].isChecked(),  # Yes
+            'LS': self.LS_group.buttons()[0].isChecked(),    # Yes
+        }
+        return rules
+
+    def update_edges(self):
+        rules = self.get_rule_values()
+        for d in self.deck_keys:
+            edge = calc_house_edge({
+                "H17": rules['H17'],
+                "DAS": rules['DAS'],
+                "DOUBLE": rules['DOUBLE'],
+                "RSA": rules['RSA'],
+                "LS": rules['LS'],
+            }, d)
+            self.edge_labels[d].setText(f"{edge:.3f}")
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    win = HouseEdgeCalculator()
+    win.show()
+    sys.exit(app.exec_())
