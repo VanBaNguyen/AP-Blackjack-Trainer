@@ -60,7 +60,7 @@ class PlayerHand:
         return hand_value(self.cards)[1]
 
 class BlackjackGame:
-    def __init__(self, starting_balance=1000, min_bet=10, max_bet=1000):
+    def __init__(self, starting_balance=10000, min_bet=10, max_bet=1000):
         self.shoe = Shoe()
         self.balance = starting_balance
         self.min_bet = min_bet

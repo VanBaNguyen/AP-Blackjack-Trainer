@@ -1,7 +1,7 @@
 import random
 
 class Shoe:
-    def __init__(self, num_decks=6, reshuffle_pct=0.8):
+    def __init__(self, num_decks=8, reshuffle_pct=0.8):
         self.num_decks = num_decks
         self.reshuffle_pct = reshuffle_pct
         self.cards = []

@@ -5,7 +5,7 @@ def risk_of_ruin(bankroll_units, edge=0.004, stddev=1.15):
     ror = math.exp(-2 * edge / variance * bankroll_units)
     return ror
 
-bankroll = 4000
+bankroll = 10000
 unit = 25
 units = bankroll // unit
 
