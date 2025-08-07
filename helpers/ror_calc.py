@@ -1,5 +1,6 @@
 import math
 
+# Odds of losing all your money given a bankroll, unit size, and edge
 def risk_of_ruin(bankroll_units, edge=0.004, stddev=1.15):
     variance = stddev ** 2
     ror = math.exp(-2 * edge / variance * bankroll_units)
